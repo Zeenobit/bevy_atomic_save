@@ -60,7 +60,6 @@ pub fn load(world: &mut World) {
                         .deserialize(&mut deserializer);
                         match result {
                             Ok(scene) => {
-                                unload_world(world);
                                 load_world(world, scene);
                             }
                             Err(why) => {
