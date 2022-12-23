@@ -1,5 +1,10 @@
 [package]
 name = "bevy_atomic_save"
+license-file = "LICENSE"
+description = "An atomic save/load system for Bevy Game Engine."
+homepage = "https://github.com/Zeenobit/bevy_atomic_save"
+repository = "https://github.com/Zeenobit/bevy_atomic_save"
+readme = "README.md"
 version = "0.1.0"
 edition = "2021"
 
