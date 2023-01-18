@@ -84,12 +84,12 @@ pub fn load_world(world: &mut World, scene: DynamicScene) {
     unload_world(world);
     let mut entity_map = EntityMap::default();
     if let Err(why) = scene.write_to_world(world, &mut entity_map) {
-        panic!("world write failed: {why:?}");
+        error!("world write failed: {why:?}");
     }
     // TODO: EntityMap doesn't implement `iter()`
     for old_entity in entity_map.keys() {
         let entity = entity_map.get(old_entity).unwrap();
-        info!("entity update required: {old_entity:?} -> {entity:?}");
+        debug!("entity update required: {old_entity:?} -> {entity:?}");
         world
             .entity_mut(entity)
             .insert(Save)
