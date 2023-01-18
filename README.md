@@ -1,4 +1,4 @@
-# ☢️ Bevy Atomic Save System
+# ☢️ Bevy Atomic Save
 
 An atomic save/load system for [Bevy](https://github.com/bevyengine/bevy).
 
