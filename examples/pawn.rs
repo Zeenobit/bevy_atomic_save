@@ -1,4 +1,4 @@
-use bevy::{prelude::*, utils::HashMap};
+use bevy::prelude::*;
 use bevy_atomic_save::{LoadWorld, Loaded, Save, SavePlugin, SaveStage, SaveWorld, Unload};
 
 fn main() {
@@ -179,22 +179,15 @@ fn update_model_position(
 }
 
 // System to fix up weapon references:
-fn post_load(
-    mut query: Query<&mut CurrentWeapon>,
-    loaded_weapons: Query<(Entity, &Loaded), With<Weapon>>,
-) {
-    // First, construct a mapping of all loaded indices to their new entities.
-    // Notice how `Loaded` does not return an `Entity`. This is because the entity's generation
-    // is invalidated upon load. So only the entity index may be used for post-load fix up.
-    let loaded_weapons: HashMap<u32, Entity> = loaded_weapons
-        .iter()
-        .map(|(entity, loaded)| (loaded.index(), entity))
-        .collect();
-    // Then update each `CurrentWeapon` reference using the new entity mapping:
+fn post_load(loaded: Res<Loaded>, mut query: Query<&mut CurrentWeapon>) {
+    // Update each `CurrentWeapon` reference using the new entity mapping:
     for mut current_weapon in &mut query {
         if let Some(old_entity) = current_weapon.entity() {
-            if let Some(new_entity) = loaded_weapons.get(&old_entity.index()) {
-                *current_weapon = CurrentWeapon(Some(*new_entity));
+            if let Some(new_entity) = loaded.entity(old_entity) {
+                *current_weapon = CurrentWeapon(Some(new_entity));
+            } else {
+                // This should not be possible if the library is used correctly.
+                // Treat it as an error case.
             }
         }
     }

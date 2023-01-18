@@ -1,5 +1,6 @@
 use bevy::ecs::entity::EntityMap;
 use bevy::scene::serde::SceneDeserializer;
+use bevy::utils::HashMap;
 use ron::Deserializer;
 use serde::de::DeserializeSeed;
 
@@ -11,7 +12,8 @@ use super::*;
 #[derive(Component, Default)]
 pub struct Unload;
 
-/// A [`Component`] which indicates that its [`Entity`] has just been loaded.
+/// A [`Resource`] available during [`SaveStage::PostLoad`] which contains a mapping of previously saved entities
+/// to new loaded entities.
 ///
 /// # Usage
 ///
@@ -20,18 +22,16 @@ pub struct Unload;
 /// that do not interact with the save system. This can cause issues with any loaded components which
 /// reference entities, since all saved references are invalidated upon load.
 ///
-/// To solve this, the [`Loaded`] component may be used to update any entity references
-/// during [`SaveStage::PostLoad`]. This component is added to every loaded entity during this stage and
-/// it contains the previously saved index of the loaded entity. Any component which references this old
-/// index can then safely update its reference to point to this component's current, loaded entity.
-#[derive(Component)]
-#[component(storage = "SparseSet")]
-pub struct Loaded(u32);
+/// To solve this, the [`Loaded`] resource may be used to update any entity references
+/// during [`SaveStage::PostLoad`]. This resource is added to world during this stage and
+/// it contains the previously saved index of the loaded entities. Any component which references entities
+/// can update its reference using this resource.
+#[derive(Resource)]
+pub struct Loaded(HashMap<u32, Entity>);
 
 impl Loaded {
-    /// Returns the raw index of the old entity from which this new entity was loaded from.
-    pub fn index(&self) -> u32 {
-        self.0
+    pub fn entity(&self, entity: Entity) -> Option<Entity> {
+        self.0.get(&entity.index()).copied()
     }
 }
 
@@ -86,23 +86,21 @@ pub fn load_world(world: &mut World, scene: DynamicScene) {
     if let Err(why) = scene.write_to_world(world, &mut entity_map) {
         error!("world write failed: {why:?}");
     }
+    let mut loaded = HashMap::new();
     // TODO: EntityMap doesn't implement `iter()`
     for old_entity in entity_map.keys() {
         let entity = entity_map.get(old_entity).unwrap();
         debug!("entity update required: {old_entity:?} -> {entity:?}");
-        world
-            .entity_mut(entity)
-            .insert(Save)
-            .insert(Loaded(old_entity.index()));
+        loaded.insert(old_entity.index(), entity);
+        world.entity_mut(entity).insert(Save);
     }
+    world.insert_resource(Loaded(loaded));
 }
 
 /// A [`System`] which finalizes load process by removing [`Loaded`] components and consuming the [`Request`].
-pub(crate) fn finish_load(query: Query<Entity, With<Loaded>>, mut commands: Commands) {
-    for entity in &query {
-        commands.entity(entity).remove::<Loaded>();
-    }
+pub(crate) fn finish_load(mut commands: Commands) {
     commands.remove_resource::<Request>();
+    commands.remove_resource::<Loaded>();
 }
 
 /// A [`System`] which despawns all entities with [`Save`] and [`Unload`] before load.
