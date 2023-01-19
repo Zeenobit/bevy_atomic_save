@@ -111,8 +111,8 @@ fn unload_world(world: &mut World) {
         .collect();
     for entity in entities {
         // Check the entity again in case it was despawned recursively
-        if world.get_entity(entity).is_some() {
-            world.entity_mut(entity).despawn_recursive();
+        if let Some(entity) = world.get_entity_mut(entity) {
+            entity.despawn_recursive();
         }
     }
 }
