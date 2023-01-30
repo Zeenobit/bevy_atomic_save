@@ -84,8 +84,8 @@ use bevy_atomic_save::{FromLoaded, RegisterLoaded};
 #[derive(Component)]
 struct SomeEntity(Entity);
 impl FromLoaded for SomeEntity {
-    fn load(&mut self, loaded: &Loaded) {
-        self.0.load(loaded);
+    fn from_loaded(&mut self, loaded: &Loaded) {
+        self.0.from_loaded(loaded);
     }
 }
 
