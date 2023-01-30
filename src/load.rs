@@ -24,8 +24,13 @@ pub struct Unload;
 ///
 /// To solve this, the [`Loaded`] resource may be used to update any entity references
 /// during [`SaveStage::PostLoad`]. This resource is added to world during this stage and
-/// it contains the previously saved index of the loaded entities. Any component which references entities
-/// can update its reference using this resource.
+/// it contains the previously saved index of the loaded entities. Any type which references entities
+/// can update its references using this resource.
+///
+/// This can be done more conveniently by implementing the [`FromLoaded`] trait for components which
+/// reference entities.
+///
+/// [`Resource`]: bevy::prelude::Resource
 #[derive(Resource)]
 pub struct Loaded(HashMap<u32, Entity>);
 
@@ -114,5 +119,69 @@ fn unload_world(world: &mut World) {
         if let Some(entity) = world.get_entity_mut(entity) {
             entity.despawn_recursive();
         }
+    }
+}
+
+/// Trait used to read and update entity references from [`Loaded`].
+///
+/// # Usage
+/// 
+/// Components which implement this trait must be registered using [`RegisterLoaded`].
+///
+/// Use this trait to update references to entities during [`SaveStage::PostLoad`].
+/// This trait is implemented for `Entity`, and `Option<Entity>`. This can be used to recursively
+/// call [`FromLoaded::from_loaded`] on any entity references which need to be updated.
+///
+/// See [`Loaded`] for more details.
+///
+/// # Example
+/// ```
+/// # use bevy::prelude::*;
+/// # use bevy_atomic_save::FromLoaded;
+/// #[derive(Component)]
+/// struct MyEntity(Entity);
+///
+/// impl FromLoaded for MyEntity {
+///     fn load(&mut self, loaded: &Loaded) {
+///         self.0.load(loaded);
+///     }
+/// }
+/// ```
+pub trait FromLoaded {
+    fn from_loaded(&mut self, loaded: &Loaded);
+}
+
+impl FromLoaded for Entity {
+    fn from_loaded(&mut self, loaded: &Loaded) {
+        *self = loaded.entity(*self).expect("loaded entity is not valid");
+    }
+}
+
+impl FromLoaded for Option<Entity> {
+    fn from_loaded(&mut self, loaded: &Loaded) {
+        if let Some(entity) = self {
+            entity.from_loaded(loaded);
+        }
+    }
+}
+
+/// Extension trait used to register components which implement [`FromLoaded`] with an [`App`].
+///
+/// [`App`]: bevy::prelude::App
+pub trait RegisterLoaded {
+    /// Adds a system which calls [`FromLoaded::from_loaded`] on all instances of a component during [`SaveStage::PostLoad`].
+    fn register_loaded<T: FromLoaded + Component>(self) -> Self;
+}
+
+impl RegisterLoaded for &mut App {
+    fn register_loaded<T: FromLoaded + Component>(self) -> Self {
+        self.add_system_to_stage(
+            SaveStage::PostLoad,
+            move |mut query: Query<&mut T>, loaded: Res<Loaded>| {
+                for mut component in &mut query {
+                    component.from_loaded(&loaded);
+                }
+            },
+        )
     }
 }

@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use bevy_atomic_save::{LoadWorld, Loaded, Save, SavePlugin, SaveStage, SaveWorld, Unload};
+use bevy_atomic_save::*;
 
 fn main() {
     // Save
@@ -83,8 +83,8 @@ fn app() -> App {
         .add_system(spawn_pawn_sprites)
         .add_system(update_model_position);
 
-    // Post-load system to fix up entity references:
-    app.add_system_to_stage(SaveStage::PostLoad, post_load);
+    // Register components which reference entities as loadable:
+    app.register_loaded::<CurrentWeapon>();
 
     app
 }
@@ -104,6 +104,12 @@ struct CurrentWeapon(Option<Entity>);
 impl CurrentWeapon {
     fn entity(&self) -> Option<Entity> {
         self.0
+    }
+}
+
+impl FromLoaded for CurrentWeapon {
+    fn from_loaded(&mut self, loaded: &Loaded) {
+        self.0.from_loaded(loaded)
     }
 }
 
@@ -175,20 +181,5 @@ fn update_model_position(
 ) {
     for (&Position(xy), &Sprite(model_entity)) in &query {
         model_query.get_mut(model_entity).unwrap().translation = xy.extend(0.0);
-    }
-}
-
-// System to fix up weapon references:
-fn post_load(loaded: Res<Loaded>, mut query: Query<&mut CurrentWeapon>) {
-    // Update each `CurrentWeapon` reference using the new entity mapping:
-    for mut current_weapon in &mut query {
-        if let Some(old_entity) = current_weapon.entity() {
-            if let Some(new_entity) = loaded.entity(old_entity) {
-                *current_weapon = CurrentWeapon(Some(new_entity));
-            } else {
-                // This should not be possible if the library is used correctly.
-                // Treat it as an error case.
-            }
-        }
     }
 }
