@@ -137,13 +137,13 @@ fn unload_world(world: &mut World) {
 /// # Example
 /// ```
 /// # use bevy::prelude::*;
-/// # use bevy_atomic_save::FromLoaded;
+/// # use bevy_atomic_save::{FromLoaded, Loaded};
 /// #[derive(Component)]
 /// struct SomeEntity(Entity);
 ///
 /// impl FromLoaded for SomeEntity {
-///     fn load(&mut self, loaded: &Loaded) {
-///         self.0.load(loaded);
+///     fn from_loaded(&mut self, loaded: &Loaded) {
+///         self.0.from_loaded(loaded);
 ///     }
 /// }
 /// ```
