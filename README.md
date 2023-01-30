@@ -74,7 +74,25 @@ fn trigger_load(mut commands: Commands) {
 ```
 3. Update entity references during `SaveStage::PostLoad`.<br/>
 During load, there is no guarantee that the indices of saved entities are preserved. This is because there may already be entities in the current world with those indices, which cannot be despawned prior to load. Because of this, any components which reference entities should update their referenced entity during `SaveStage::PostLoad`.<br/>
-If your project does not reference entities in its save data, you can safely skip this step. Otherwise, see `./examples/pawn.rs` for a complete example on how to do this.
+This can be done by implementing the `FromLoaded` trait for any components which reference entities, and then registering those components in your `app` using `RegisterLoaded`.<br/>
+See `./examples/pawn.rs` for a concrete example on how to do this.</br>
+Alternatively, this can also be done manually by adding a system to `SaveStage::PostLoad` and reading the `Loaded` resource directly.<br/>
+```rust
+use bevy::prelude::*;
+use bevy_atomic_save::{FromLoaded, RegisterLoaded};
+
+#[derive(Component)]
+struct SomeEntity(Entity);
+impl FromLoaded for SomeEntity {
+    fn load(&mut self, loaded: &Loaded) {
+        self.0.load(loaded);
+    }
+}
+
+...
+
+app.register_loaded::<SomeEntity>();
+```
 
 ## Notes
 
