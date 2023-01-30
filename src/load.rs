@@ -9,7 +9,7 @@ use super::*;
 /// A [`Component`] which indicates that its [`Entity`] and all of its [`Children`] should be despawned before load.
 ///
 /// Any entity with an [`Unload`] component is despawned during [`SaveStage::Load`].
-#[derive(Component, Default)]
+#[derive(Component, Default, Clone)]
 pub struct Unload;
 
 /// A [`Resource`] available during [`SaveStage::PostLoad`] which contains a mapping of previously saved entities

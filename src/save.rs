@@ -3,7 +3,7 @@ use super::*;
 /// A [`Component`] which indicates that its [`Entity`] should be saved.
 ///
 /// Any entity with a [`Save`] component is despawned during [`SaveStage::Load`].
-#[derive(Component, Default)]
+#[derive(Component, Default, Clone)]
 pub struct Save;
 
 /// A [`RunCriteria`] which returns [`ShouldRun::Yes`] if there is a save [`Request`] present; [`ShouldRun::No`] otherwise.
