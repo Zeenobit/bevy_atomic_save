@@ -35,6 +35,12 @@ fn main() {
     {
         let mut app = app();
 
+        // Spawn a few random entities.
+        // This ensures the index of the saved entities are invalidated, for demonstration.
+        app.world.spawn_empty();
+        app.world.spawn_empty();
+        app.world.spawn_empty();
+
         app.world.load("pawn.ron");
         app.update();
 
