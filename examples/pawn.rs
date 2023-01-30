@@ -83,7 +83,7 @@ fn app() -> App {
         .add_system(spawn_pawn_sprites)
         .add_system(update_model_position);
 
-    // Register components which reference entities as loadable:
+    // Register components which reference entities as "loaded".
     app.register_loaded::<CurrentWeapon>();
 
     app
@@ -107,6 +107,8 @@ impl CurrentWeapon {
     }
 }
 
+// Any saved component which references entities should implement `FromLoaded`
+// by calling `from_loaded` recursively on all of its members which also implement `FromLoaded`.
 impl FromLoaded for CurrentWeapon {
     fn from_loaded(&mut self, loaded: &Loaded) {
         self.0.from_loaded(loaded)
