@@ -165,9 +165,22 @@ impl FromLoaded for Option<Entity> {
     }
 }
 
+/// A [`System`] which calls [`FromLoaded::from_loaded`] on all instances of a [`Component`]
+/// which implements [`FromLoaded`].
+/// 
+/// # Usage
+/// 
+/// Adding this system to any stage other than [`SaveStage::PostLoad`] will cause a panic.
+/// Because of this, it is typically safer to use [`RegisterLoaded`] to add this system to an app.
+/// However, if there is any load order dependencies between components, this system may be inserted
+/// manually to control its run schedule.
+pub fn loaded<T: Component + FromLoaded>(loaded: Res<Loaded>, mut query: Query<&mut T>) {
+    for mut component in &mut query {
+        component.from_loaded(&loaded);
+    }
+}
+
 /// Extension trait used to register components which implement [`FromLoaded`] with an [`App`].
-///
-/// [`App`]: bevy::prelude::App
 pub trait RegisterLoaded {
     /// Adds a system which calls [`FromLoaded::from_loaded`] on all instances of a component during [`SaveStage::PostLoad`].
     fn register_loaded<T: FromLoaded + Component>(self) -> Self;
@@ -175,13 +188,6 @@ pub trait RegisterLoaded {
 
 impl RegisterLoaded for &mut App {
     fn register_loaded<T: FromLoaded + Component>(self) -> Self {
-        self.add_system_to_stage(
-            SaveStage::PostLoad,
-            move |mut query: Query<&mut T>, loaded: Res<Loaded>| {
-                for mut component in &mut query {
-                    component.from_loaded(&loaded);
-                }
-            },
-        )
+        self.add_system_to_stage(SaveStage::PostLoad, loaded::<T>)
     }
 }
