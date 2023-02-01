@@ -125,7 +125,7 @@ fn unload_world(world: &mut World) {
 /// Trait used to read and update entity references from [`Loaded`].
 ///
 /// # Usage
-/// 
+///
 /// Components which implement this trait must be registered using [`RegisterLoaded`].
 ///
 /// Use this trait to update references to entities during [`SaveStage::PostLoad`].
@@ -157,7 +157,7 @@ impl FromLoaded for Entity {
     }
 }
 
-impl FromLoaded for Option<Entity> {
+impl<T: FromLoaded> FromLoaded for Option<T> {
     fn from_loaded(&mut self, loaded: &Loaded) {
         if let Some(entity) = self {
             entity.from_loaded(loaded);
@@ -167,9 +167,9 @@ impl FromLoaded for Option<Entity> {
 
 /// A [`System`] which calls [`FromLoaded::from_loaded`] on all instances of a [`Component`]
 /// which implements [`FromLoaded`].
-/// 
+///
 /// # Usage
-/// 
+///
 /// Adding this system to any stage other than [`SaveStage::PostLoad`] will cause a panic.
 /// Because of this, it is typically safer to use [`RegisterLoaded`] to add this system to an app.
 /// However, if there is any load order dependencies between components, this system may be inserted
