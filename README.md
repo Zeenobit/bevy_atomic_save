@@ -2,6 +2,8 @@
 
 An atomic save/load system for [Bevy](https://github.com/bevyengine/bevy).
 
+⚠️ This crate has been deprecated. Use [Moonshine Save](https://github.com/Zeenobit/moonshine_save) instead.
+
 ## Features
 
 - Save and load a [World](https://docs.rs/bevy/latest/bevy/ecs/world/struct.World.html) into a [RON](https://github.com/ron-rs/ron) file on disk
