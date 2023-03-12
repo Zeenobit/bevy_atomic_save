@@ -65,7 +65,7 @@ struct PlayerModelBundle {
 }
 ```
 2. Load a previously saved file using `LoadWorld` via a `&mut World` or `&mut Commands`.<br/>
-This starts a load process, which starts by deserializing the given file and then despawning (recursively) all entities marked with `Save` or `Unload` components. Finally, new entities are spawned and `SaveStage::PostLoad` begins.
+This starts a load process, which starts by deserializing the given file and then despawning (recursively) all entities marked with `Save` or `Unload` components. Finally, new entities are spawned and `SaveSet::PostLoad` begins.
 ```rust
 use bevy::prelude::*;
 use bevy_atomic_save::LoadWorld;
@@ -74,11 +74,11 @@ fn trigger_load(mut commands: Commands) {
     commands.load("world.ron");
 }
 ```
-3. Update entity references during `SaveStage::PostLoad`.<br/>
-During load, there is no guarantee that the indices of saved entities are preserved. This is because there may already be entities in the current world with those indices, which cannot be despawned prior to load. Because of this, any components which reference entities should update their referenced entity during `SaveStage::PostLoad`.<br/>
+3. Update entity references during `SaveSet::PostLoad`.<br/>
+During load, there is no guarantee that the indices of saved entities are preserved. This is because there may already be entities in the current world with those indices, which cannot be despawned prior to load. Because of this, any components which reference entities should update their referenced entity during `SaveSet::PostLoad`.<br/>
 This can be done by implementing the `FromLoaded` trait for any components which reference entities, and then registering those components in your `app` using `RegisterLoaded`.<br/>
 See `./examples/pawn.rs` for a concrete example on how to do this.</br>
-Alternatively, this can also be done manually by adding a system to `SaveStage::PostLoad` and reading the `Loaded` resource directly.<br/>
+Alternatively, this can also be done manually by adding a system to `SaveSet::PostLoad` and reading the `Loaded` resource directly.<br/>
 ```rust
 use bevy::prelude::*;
 use bevy_atomic_save::{FromLoaded, RegisterLoaded};
@@ -102,7 +102,7 @@ app.register_loaded::<SomeEntity>();
 Currently, a `DynamicScene` in Bevy does not save `Resource` items. To save/load resources, it is recommended to spawn your saved resources as entities with a `Save` component. This also gives you control over exactly which resources should be saved.
 
 ### Bevy Components and Entity References
-Some components in Bevy reference entities (e.g. `Parent` and `Children`), which would need to update their references during `SaveStage::PostLoad`. This crate does **NOT** provide this functionality. In most cases, you shouldn't need to save such components, as they typically belong to scene entities which may be spawned from loaded game data.
+Some components in Bevy reference entities (e.g. `Parent` and `Children`), which would need to update their references during `SaveSet::PostLoad`. This crate does **NOT** provide this functionality. In most cases, you shouldn't need to save such components, as they typically belong to scene entities which may be spawned from loaded game data.
 
 ### World Dump
 During development, it may be useful to examine a world in raw text format, within a specific frame, for diagnostics purposes. This crate provides a simple function to do this which uses the underlying save system to dump the world state into a RON file. See `SaveWorld::dump` for details.

@@ -1,25 +1,18 @@
 use super::*;
 
-/// A [`Plugin`] which adds the [`SaveStage`] and any required systems for saving and loading the [`World`].
+/// A [`Plugin`] which adds the [`SaveSet`] and any required systems for saving and loading the [`World`].
 pub struct SavePlugin;
 
 impl Plugin for SavePlugin {
     fn build(&self, app: &mut App) {
-        app.add_stage_after(
-            CoreStage::Last,
-            SaveStage::Save,
-            SystemStage::single(save).with_run_criteria(should_save),
-        )
-        .add_stage_before(
-            CoreStage::PreUpdate,
-            SaveStage::Load,
-            SystemStage::single(load).with_run_criteria(should_load),
-        )
-        .add_stage_after(
-            SaveStage::Load,
-            SaveStage::PostLoad,
-            SystemStage::parallel().with_run_criteria(should_load),
-        )
-        .add_system_to_stage(SaveStage::PostLoad, finish_load);
+        app.configure_set(SaveSet::Save.after(CoreSet::Last))
+            .add_system(save.in_base_set(SaveSet::Save).run_if(should_save))
+            .configure_sets((CoreSet::PreUpdate, SaveSet::Load, SaveSet::PostLoad).chain())
+            .add_system(load.in_base_set(SaveSet::Load).run_if(should_load))
+            .add_system(
+                finish_load
+                    .in_base_set(SaveSet::PostLoad)
+                    .run_if(should_load),
+            );
     }
 }

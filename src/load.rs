@@ -8,11 +8,11 @@ use super::*;
 
 /// A [`Component`] which indicates that its [`Entity`] and all of its [`Children`] should be despawned before load.
 ///
-/// Any entity with an [`Unload`] component is despawned during [`SaveStage::Load`].
+/// Any entity with an [`Unload`] component is despawned during [`SaveSet::Load`].
 #[derive(Component, Default, Clone)]
 pub struct Unload;
 
-/// A [`Resource`] available during [`SaveStage::PostLoad`] which contains a mapping of previously saved entities
+/// A [`Resource`] available during [`SaveSet::PostLoad`] which contains a mapping of previously saved entities
 /// to new loaded entities.
 ///
 /// # Usage
@@ -23,7 +23,7 @@ pub struct Unload;
 /// reference entities, since all saved references are invalidated upon load.
 ///
 /// To solve this, the [`Loaded`] resource may be used to update any entity references
-/// during [`SaveStage::PostLoad`]. This resource is added to world during this stage and
+/// during [`SaveSet::PostLoad`]. This resource is added to world during this set and
 /// it contains the previously saved index of the loaded entities. Any type which references entities
 /// can update its references using this resource.
 ///
@@ -40,12 +40,13 @@ impl Loaded {
     }
 }
 
-/// A [`RunCriteria`] which returns [`ShouldRun::Yes`] if there is a load [`Request`] present; [`ShouldRun::No`] otherwise.
-pub fn should_load(request: Option<Res<Request>>) -> ShouldRun {
-    match request.map(|request| request.should_load()) {
-        Some(true) => ShouldRun::Yes,
-        _ => ShouldRun::No,
+/// Makes sure the load process is only run if there is a load [`Request`] present.
+pub fn should_load(request: Option<Res<Request>>) -> bool {
+    if let Some(req) = request.map(|request| request.should_load()) {
+        return req;
     }
+
+    false
 }
 
 /// A [`System`] which handles a load [`Request`] and starts the load process.
@@ -128,7 +129,7 @@ fn unload_world(world: &mut World) {
 ///
 /// Components which implement this trait must be registered using [`RegisterLoaded`].
 ///
-/// Use this trait to update references to entities during [`SaveStage::PostLoad`].
+/// Use this trait to update references to entities during [`SaveSet::PostLoad`].
 /// This trait is implemented for `Entity`, and `Option<Entity>`. This can be used to recursively
 /// call [`FromLoaded::from_loaded`] on any entity references which need to be updated.
 ///
@@ -170,7 +171,7 @@ impl<T: FromLoaded> FromLoaded for Option<T> {
 ///
 /// # Usage
 ///
-/// Adding this system to any stage other than [`SaveStage::PostLoad`] will cause a panic.
+/// Adding this system to any set other than [`SaveSet::PostLoad`] will cause a panic.
 /// Because of this, it is typically safer to use [`RegisterLoaded`] to add this system to an app.
 /// However, if there is any load order dependencies between components, this system may be inserted
 /// manually to control its run schedule.
@@ -182,12 +183,12 @@ pub fn loaded<T: Component + FromLoaded>(loaded: Res<Loaded>, mut query: Query<&
 
 /// Extension trait used to register components which implement [`FromLoaded`] with an [`App`].
 pub trait RegisterLoaded {
-    /// Adds a system which calls [`FromLoaded::from_loaded`] on all instances of a component during [`SaveStage::PostLoad`].
+    /// Adds a system which calls [`FromLoaded::from_loaded`] on all instances of a component during [`SaveSet::PostLoad`].
     fn register_loaded<T: FromLoaded + Component>(self) -> Self;
 }
 
 impl RegisterLoaded for &mut App {
     fn register_loaded<T: FromLoaded + Component>(self) -> Self {
-        self.add_system_to_stage(SaveStage::PostLoad, loaded::<T>)
+        self.add_system(loaded::<T>.in_base_set(SaveSet::PostLoad))
     }
 }

@@ -2,16 +2,17 @@ use super::*;
 
 /// A [`Component`] which indicates that its [`Entity`] should be saved.
 ///
-/// Any entity with a [`Save`] component is despawned during [`SaveStage::Load`].
+/// Any entity with a [`Save`] component is despawned during [`SaveSet::Load`].
 #[derive(Component, Default, Clone)]
 pub struct Save;
 
-/// A [`RunCriteria`] which returns [`ShouldRun::Yes`] if there is a save [`Request`] present; [`ShouldRun::No`] otherwise.
-pub fn should_save(request: Option<Res<Request>>) -> ShouldRun {
-    match request.map(|request| request.should_save()) {
-        Some(true) => ShouldRun::Yes,
-        _ => ShouldRun::No,
+/// Makes sure the save process is only run if there is a save [`Request`] present.
+pub fn should_save(request: Option<Res<Request>>) -> bool {
+    if let Some(req) = request.map(|request| request.should_save()) {
+        return req;
     }
+
+    false
 }
 
 /// A [`System`] which handles a save [`Request`].
@@ -22,7 +23,10 @@ pub fn save(world: &mut World) {
                 .query_filtered::<Entity, With<Save>>()
                 .iter(world)
                 .collect(),
-            SaveMode::Dump => world.iter_entities().collect(),
+            SaveMode::Dump => world
+                .iter_entities()
+                .map(|entity_ref| entity_ref.id())
+                .collect(),
         };
 
         let scene = save_world(world, entities);

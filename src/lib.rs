@@ -2,7 +2,6 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::path::PathBuf;
 
-use bevy::ecs::schedule::ShouldRun;
 use bevy::prelude::*;
 
 mod load;
@@ -13,15 +12,16 @@ pub use load::*;
 pub use plugin::*;
 pub use save::*;
 
-#[derive(StageLabel)]
-pub enum SaveStage {
-    /// The [`Stage`] after [`CoreStage::Last`] during which [`World`] is saved.
+#[derive(SystemSet, Debug, Hash, PartialEq, Eq, Clone)]
+#[system_set(base)]
+pub enum SaveSet {
+    /// The [`Set`] after [`CoreSet::Last`] during which [`World`] is saved.
     Save,
-    /// The [`Stage`] before [`CoreStage::First`] during which [`World`] is loaded.
+    /// The [`Set`] before [`CoreSet::First`] during which [`World`] is loaded.
     Load,
-    /// The [`Stage`] after [`SaveStage::Load`].
+    /// The [`Set`] after [`SaveSet::Load`].
     ///
-    /// This stage is typically reserved for any systems which handle [`Loaded`] entities.
+    /// This set is typically reserved for any systems which handle [`Loaded`] entities.
     PostLoad,
 }
 
@@ -29,7 +29,7 @@ pub enum SaveStage {
 pub trait SaveWorld {
     /// Inserts a new [`Request::Save`] with the given `path` into this [`World`].
     ///
-    /// This request is processed during [`SaveStage::Save`]. During this stage, any [`Entity`]
+    /// This request is processed during [`SaveSet::Save`]. During this set, any [`Entity`]
     /// with a [`Save`] [`Component`] is serialized into a [`DynamicScene`] which is then written
     /// into a file located at given `path`.
     ///
@@ -38,7 +38,7 @@ pub trait SaveWorld {
 
     /// Inserts a new [`Request::Save`] with the given `path` into this [`World`].
     ///
-    /// This request is processed during [`SaveStage::Save`]. During this stage, all entities
+    /// This request is processed during [`SaveSet::Save`]. During this set, all entities
     /// are serialized into a [`DynamicScene`] which is then written into a file located at given `path`.
     ///
     /// Unlike [`SaveWorld::save()`], this function saves *all* entities and their serializable components.
@@ -88,10 +88,10 @@ impl SaveWorld for &mut World {
 pub trait LoadWorld {
     /// Inserts a new [`Request::Load`] from the given `path` for this [`World`].
     ///
-    /// This request is processed during [`SaveStage::Load`]. During this stage, any [`Entity`]
+    /// This request is processed during [`SaveSet::Load`]. During this set, any [`Entity`]
     /// with a [`Save`] or [`Unload`] [`Component`] is despawned recursively. Then, entities are deserialized
     /// from the given path (which should point to a previously saved file) and spawned in this [`World`]
-    /// with a new [`Loaded`] [`Component`]. This component is removed after [`SaveStage::PostLoad`].
+    /// with a new [`Loaded`] [`Component`]. This component is removed after [`SaveSet::PostLoad`].
     ///
     /// If the load request fails, an [`error`] message will be logged with cause of failure.
     ///
@@ -100,7 +100,7 @@ pub trait LoadWorld {
     /// not marked for [`Save`] or [`Unload`]. This means any saved entity references are most likely invalid
     /// after load.
     ///
-    /// To solve this, during [`SaveStage::PostLoad`], systems may use the [`Loaded`] component to update entity
+    /// To solve this, during [`SaveSet::PostLoad`], systems may use the [`Loaded`] component to update entity
     /// references as required. See examples for how this would be done.
     fn load(self, path: impl Into<PathBuf>);
 }

@@ -13,4 +13,4 @@ edition = "2021"
 [dependencies]
 ron = "0.8.*"
 serde = "1.0.*"
-bevy = "0.9.*"
+bevy = "0.10.*"
