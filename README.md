@@ -2,7 +2,12 @@
 
 An atomic save/load system for [Bevy](https://github.com/bevyengine/bevy).
 
-⚠️ This crate has been deprecated. Use [Moonshine Save](https://github.com/Zeenobit/moonshine_save) instead.
+---
+⚠️ **This crate has been deprecated.**
+
+Use [Moonshine Save](https://github.com/Zeenobit/moonshine_save) instead ([crates.io](https://crates.io/crates/moonshine-save)) for Bevy 0.10 compatibility.
+
+---
 
 ## Features
 
